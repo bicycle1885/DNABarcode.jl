@@ -10,7 +10,18 @@ type SequenceLevenshteinCode{k} <: AbstractCode{k}
 end
 
 function distance{k,l}(::Type{SequenceLevenshteinCode{k}}, x::DNAKmer{k}, y::DNAKmer{l})
-    dist = Matrix{Int}(k + 1, l + 1)
+    return rundp!(Matrix{Int}(k + 1, l + 1), x, y)
+end
+
+function distance{k}(::Type{SequenceLevenshteinCode{k}}, kmer::DNAKmer{k}, seq::DNASequence)
+    return rundp!(Matrix{Int}(k + 1, length(seq) + 1), kmer, seq)
+end
+
+function rundp!(dist, seq1, seq2)
+    k = length(seq1)
+    l = length(seq2)
+    @assert size(dist) == (k + 1, l + 1)
+
     for i in 0:k
         dist[i+1,1] = i
     end
@@ -20,7 +31,7 @@ function distance{k,l}(::Type{SequenceLevenshteinCode{k}}, x::DNAKmer{k}, y::DNA
             dist[i+1,j+1] = min(
                 dist[i,j+1] + 1,
                 dist[i+1,j] + 1,
-                dist[i,j]   + ifelse(x[i] == y[j], 0, 1))
+                dist[i,j]   + ifelse(seq1[i] == seq2[j], 0, 1))
         end
     end
 
@@ -31,6 +42,7 @@ function distance{k,l}(::Type{SequenceLevenshteinCode{k}}, x::DNAKmer{k}, y::DNA
     for j in 0:l
         mindist = min(mindist, dist[end,j+1])
     end
+
     return mindist
 end
 
@@ -53,12 +65,10 @@ function genbarcodes{k}(::Type{SequenceLevenshteinCode{k}}, mindist::Integer, n:
 end
 
 function demultiplex{k}(code::SequenceLevenshteinCode{k}, seq::DNASequence)
-    # FIXME: +8 is quite arbitrary
-    barcode = extractkmer(DNAKmer{k+8}, seq, 1)
     i_min = 0
     dist_min = typemax(Int)
     for (i, codeword) in enumerate(code.codewords)
-        dist = distance(SequenceLevenshteinCode{k}, codeword, barcode)
+        dist = distance(SequenceLevenshteinCode{k}, codeword, seq)
         if dist < dist_min
             i_min = i
             dist_min = dist
