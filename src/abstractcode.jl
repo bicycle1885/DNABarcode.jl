@@ -17,12 +17,6 @@ function Base.filter{k}(f::Function, code::AbstractCode{k})
 end
 
 function Base.filter!{k}(f::Function, code::AbstractCode{k})
-    filtered = DNAKmer{k}[]
-    for x in code
-        if f(x)
-            push!(filtered, x)
-        end
-    end
-    code.codewords = filtered
+    filter!(f, code.codewords)
     return code
 end
