@@ -12,6 +12,10 @@ function Base.size(code::AbstractCode)
     return size(code.codewords)
 end
 
+function Base.filter{k}(f::Function, code::AbstractCode{k})
+    return filter!(f, deepcopy(code))
+end
+
 function Base.filter!{k}(f::Function, code::AbstractCode{k})
     filtered = DNAKmer{k}[]
     for x in code
